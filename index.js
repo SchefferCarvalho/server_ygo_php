@@ -1,4 +1,4 @@
-var express = require('express');
+﻿var express = require('express');
 const { check, validationResult } = require('express-validator/check');
 
 var app = express();
@@ -29,7 +29,7 @@ console.log('API funcionando na porta ' + port);
 function execSQLQuery(sqlQry, res) {
   const connection = mysql.createConnection({
     host: 'localhost',
-    port: 3000,
+    port: 3306,
     user: 'ygo',
     password: '12345',
     database: 'cup'
@@ -53,9 +53,7 @@ router.get('/tb_carta', (req, res) => {
   execSQLQuery('SELECT * FROM tb_carta', res);
 })
 
-router.get('/tb_deck', (req, res) => {
-  execSQLQuery('SELECT * FROM tb_deck', res);
-})
+
 
 router.get('/ta_carta_has_ta_deck', (req, res) => {
   execSQLQuery('SELECT * FROM ta_carta_has_ta_deck', res);
@@ -78,18 +76,9 @@ router.get('/tb_usuario', (req, res) => {
 router.get('/tb_usuario/:id', (req, res) => {
 
   id = req.params.id;
-
-  check(id).isNumeric();
-
-  let errors = validationResult(req);
-
-  if (!errors.isEmpty()) {
-    return res.status(422).json({ errors: errors.array() });
-    console.log('entrei aqui');
-  } else {
-    execSQLQuery(`SELECT * FROM tb_usuario WHERE idt_usuario = '${id}'`, res);
-    res.status(200);
-  }
+  
+  execSQLQuery(`SELECT * FROM tb_usuario WHERE idt_usuario = '${id}'`, res);
+  res.status(200);
 })
 
 // modelo de api para adicionar dados na tabela
@@ -108,8 +97,6 @@ router.post('/tb_usuario', (req, res) => {
   var nome = obj.nome;
   var password = obj.password;
   var nick = obj.nick;
-
-  var erros = req.validationErrors();
 
   execSQLQuery(`INSERT INTO tb_usuario(email_usua,nme_usua,pwd_usua,nicknme_usua)VALUES('${email}','${nome}','${password}','${nick}')`, res);
   res.status(200);
@@ -160,4 +147,52 @@ router.get('/confere-usuario/:usuario/:senha', (req, res) => {
 
 })
 
-// fim da rotas de usuários
+// fim das rotas de usuários
+
+
+// inicio das rotas de decks
+
+router.get('/tb_deck', (req, res) => {
+  execSQLQuery('SELECT * FROM tb_deck', res);
+})
+
+router.get('/tb_deck/:id', (req, res) => {
+
+  id = req.params.id;
+  
+  execSQLQuery(`SELECT * FROM tb_deck WHERE idt_usuario = '${id}'`, res);
+  res.status(200);
+})
+
+router.post('/tb_deck', (req, res) => {
+
+  obj = JSON.parse(req.body);
+
+  var nomeDeck = obj.nome;
+  var usuarioDeck = parseInt(obj.usuario);
+
+  execSQLQuery(`INSERT INTO tb_deck(nme_deck,idt_usuario)VALUES('${nomeDeck}',${usuarioDeck})`, res);
+  res.status(200);
+})
+
+// modelo de API para deletar dados na tabela
+router.delete('/tb_deck/:id', (req, res) => {
+
+  id = req.params.id;
+  execSQLQuery(`DELETE FROM ta_carta_has_ta_deck WHERE idt_deck = '${id}'`, res);
+  execSQLQuery(`DELETE FROM tb_deck WHERE idt_deck = '${id}'`, res);
+  res.status(200);
+});
+
+app.put('/tb_deck/:id', function (req, res) {
+
+  obj = JSON.parse(req.body);
+  id = req.params.id;
+
+  var nome = obj.nome;
+
+  execSQLQuery(`UPDATE tb_deck SET nme_deck = '${nome}' WHERE idt_deck = ${id}`, res);
+  res.status(200);
+});
+
+// fim das rotas de usuários
