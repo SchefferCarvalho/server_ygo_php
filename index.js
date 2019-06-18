@@ -67,7 +67,8 @@ router.get('/ta_carta_has_ta_deck', (req, res) => {
 
 // modelo de api para listar todos os dados de uma tabela
 router.get('/tb_usuario', (req, res) => {
-  execSQLQuery('SELECT email_usua, pwd_usua FROM tb_usuario', res);
+  // execSQLQuery('SELECT email_usua, pwd_usua FROM tb_usuario', res);
+  execSQLQuery('SELECT * FROM tb_usuario', res);
 })
 
 // modelo de api para listar todos os dados de uma tabela
