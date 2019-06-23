@@ -8,7 +8,7 @@ var mysql = require('mysql');
 
 //configurando o body parser para pegar POSTS mais tarde
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json({ type: 'application/*+json' }))
+app.use(bodyParser.json())
 app.use(bodyParser.text());
 
 app.use(function (req, res, next) {
@@ -32,7 +32,7 @@ function execSQLQuery(sqlQry, res) {
     port: 3306,
     user: 'ygo',
     password: '12345',
-    database: 'cup'
+    database: 'cup2'
   });
 
   connection.query(sqlQry, function (error, results, fields) {
@@ -45,21 +45,25 @@ function execSQLQuery(sqlQry, res) {
   });
 }
 
-router.get('/tb_tipo_carta', (req, res) => {
-  execSQLQuery('SELECT * FROM td_tipo_carta', res);
-})
-
+// funções de cartas
 router.get('/tb_carta', (req, res) => {
-  execSQLQuery('SELECT * FROM tb_carta', res);
+  execSQLQuery('SELECT * FROM tb_carta order by extra_carta, nme_carta asc', res);
 })
 
+router.get('/tb_carta/:id', (req, res) => {
+  id = req.params.id;
 
+  execSQLQuery(`SELECT * FROM tb_carta WHERE idt_carta = '${id}'`, res);
+})
+// fim de funções de carta
 
 router.get('/ta_carta_has_ta_deck', (req, res) => {
   execSQLQuery('SELECT * FROM ta_carta_has_ta_deck', res);
 })
 
-
+router.get('/ta_usuario_has_tb_carta', (req, res) => {
+  execSQLQuery('SELECT * FROM ta_usuario_has_tb_carta', res);
+})
 
 // início da rotas de usuários
 
@@ -77,7 +81,7 @@ router.get('/tb_usuario', (req, res) => {
 router.get('/tb_usuario/:id', (req, res) => {
 
   id = req.params.id;
-  
+
   execSQLQuery(`SELECT * FROM tb_usuario WHERE idt_usuario = '${id}'`, res);
   res.status(200);
 })
@@ -92,14 +96,21 @@ router.get('/tb_usuario/:id', (req, res) => {
 // }
 router.post('/tb_usuario', (req, res) => {
 
-  obj = JSON.parse(req.body);
+  console.log(req.body);
+  oDado = JSON.stringify(req.body);
+
+  stringTrabalhada = oDado.slice(1,-4);
+
+  obj = JSON.parse(stringTrabalhada);
+  obj = JSON.parse(obj);
 
   var email = obj.email;
   var nome = obj.nome;
-  var password = obj.password;
+  var senha = obj.senha;
   var nick = obj.nick;
+  var admin = obj.admin;
 
-  execSQLQuery(`INSERT INTO tb_usuario(email_usua,nme_usua,pwd_usua,nicknme_usua)VALUES('${email}','${nome}','${password}','${nick}')`, res);
+  execSQLQuery(`INSERT INTO tb_usuario(email_usua,nme_usua,pwd_usua,nicknme_usua, adm) VALUES ('${email}','${nome}','${senha}','${nick}','${admin}')`, res);
   res.status(200);
 
 });
@@ -108,9 +119,24 @@ router.post('/tb_usuario', (req, res) => {
 router.delete('/tb_usuario/:id', (req, res) => {
 
   id = req.params.id;
+  
+  execSQLQuery(`
+  DELETE 
+  deck.*, cartas.*, usuario.*, cartasobtidas.* 
+  FROM ta_carta_has_ta_deck as cartas 
+  
+  RIGHT JOIN tb_deck as deck 
+    ON cartas.idt_deck = deck.idt_deck 
+    
+  RIGHT JOIN tb_usuario as usuario
+    ON usuario.idt_usuario = deck.idt_deck
+    
+  LEFT JOIN ta_usuario_has_ta_carta as cartasobtidas
+    ON  cartasobtidas.idt_usuario = usuario.idt_usuario
 
-  execSQLQuery(`DELETE FROM tb_usuario WHERE idt_usuario = '${id}'`, res);
-  res.status(200);
+  WHERE usuario.idt_usuario = '${id}'`, res);
+  // res.sendStatus(200);
+
 });
 
 
@@ -143,7 +169,7 @@ router.get('/confere-usuario/:usuario/:senha', (req, res) => {
 
   usuario = req.params.usuario;
   senha = req.params.senha;
-  let resultado;
+
   execSQLQuery(`SELECT * FROM tb_usuario WHERE email_usua = '${usuario}' AND pwd_usua = '${senha}'`, res);
 
 })
@@ -153,26 +179,40 @@ router.get('/confere-usuario/:usuario/:senha', (req, res) => {
 
 // inicio das rotas de decks
 
-router.get('/tb_deck', (req, res) => {
-  execSQLQuery('SELECT * FROM tb_deck', res);
+router.get('/tb_deck_iniciante', (req, res) => {
+  execSQLQuery(`SELECT * FROM tb_deck WHERE deck_iniciante = 1`, res);
 })
 
 router.get('/tb_deck/:id', (req, res) => {
 
   id = req.params.id;
-  
+
   execSQLQuery(`SELECT * FROM tb_deck WHERE idt_usuario = '${id}'`, res);
+  res.status(200);
+})
+
+router.get('/tb_deck_lista/:id', (req, res) => {
+
+  id = req.params.id;
+
+  execSQLQuery(`SELECT * FROM ta_carta_has_ta_deck as deck INNER JOIN tb_carta as carta ON deck.idt_carta = carta.idt_carta WHERE idt_deck = '${id}'`, res);
   res.status(200);
 })
 
 router.post('/tb_deck', (req, res) => {
 
-  obj = JSON.parse(req.body);
+  oDado = JSON.stringify(req.body);
+
+  stringTrabalhada = oDado.slice(1,-4);
+
+  obj = JSON.parse(stringTrabalhada);
+  obj = JSON.parse(obj);
 
   var nomeDeck = obj.nome;
-  var usuarioDeck = parseInt(obj.usuario);
+  var usuarioDeck = obj.usuario;
 
   execSQLQuery(`INSERT INTO tb_deck(nme_deck,idt_usuario)VALUES('${nomeDeck}',${usuarioDeck})`, res);
+
   res.status(200);
 })
 
@@ -180,10 +220,11 @@ router.post('/tb_deck', (req, res) => {
 router.delete('/tb_deck/:id', (req, res) => {
 
   id = req.params.id;
-  execSQLQuery(`DELETE FROM ta_carta_has_ta_deck WHERE idt_deck = '${id}'`, res);
-  execSQLQuery(`DELETE FROM tb_deck WHERE idt_deck = '${id}'`, res);
-  res.status(200);
+
+  execSQLQuery(`DELETE deck.*, cartas.* FROM ta_carta_has_ta_deck as cartas RIGHT JOIN tb_deck as deck ON cartas.idt_deck = deck.idt_deck WHERE deck.idt_deck = '${id}'`, res);
+
 });
+
 
 app.put('/tb_deck/:id', function (req, res) {
 
