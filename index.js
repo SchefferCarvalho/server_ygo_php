@@ -30,8 +30,8 @@ function execSQLQuery(sqlQry, res) {
   const connection = mysql.createConnection({
     host: 'localhost',
     port: 3306,
-    user: 'root',
-    password: '',
+    user: 'ygo',
+    password: '12345',
     database: 'cup2'
   });
 
@@ -180,7 +180,7 @@ router.get('/tb_deck_lista/:id', (req, res) => {
 
   id = req.params.id;
 
-  execSQLQuery(`SELECT * FROM ta_carta_has_ta_deck as deck INNER JOIN tb_carta as carta ON deck.idt_carta = carta.idt_carta INNER JOIN tb_deck ON tb_deck.idt_deck = deck.idt_deck WHERE deck.idt_deck = '${id}' ORDER BY tipo_carta ASC`, res);
+  execSQLQuery(`SELECT * FROM ta_carta_has_ta_deck as deck INNER JOIN tb_carta as carta ON deck.idt_carta = carta.idt_carta INNER JOIN tb_deck ON tb_deck.idt_deck = deck.idt_deck WHERE deck.idt_deck = '${id}' ORDER BY extra_carta, tipo_carta, nme_carta ASC`, res);
   res.status(200);
 })
 
