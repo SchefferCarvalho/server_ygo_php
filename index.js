@@ -96,7 +96,6 @@ router.get('/tb_usuario/:id', (req, res) => {
 // }
 router.post('/tb_usuario', (req, res) => {
 
-  console.log(req.body);
   oDado = JSON.stringify(req.body);
 
   stringTrabalhada = oDado.slice(1,-4);
