@@ -30,8 +30,8 @@ function execSQLQuery(sqlQry, res) {
   const connection = mysql.createConnection({
     host: 'localhost',
     port: 3306,
-    user: 'ygo',
-    password: '12345',
+    user: 'root',
+    password: '',
     database: 'cup2'
   });
 
@@ -120,21 +120,7 @@ router.delete('/tb_usuario/:id', (req, res) => {
 
   id = req.params.id;
   
-  execSQLQuery(`
-  DELETE 
-  deck.*, cartas.*, usuario.*, cartasobtidas.* 
-  FROM ta_carta_has_ta_deck as cartas 
-  
-  RIGHT JOIN tb_deck as deck 
-    ON cartas.idt_deck = deck.idt_deck 
-    
-  RIGHT JOIN tb_usuario as usuario
-    ON usuario.idt_usuario = deck.idt_deck
-    
-  LEFT JOIN ta_usuario_has_ta_carta as cartasobtidas
-    ON  cartasobtidas.idt_usuario = usuario.idt_usuario
-
-  WHERE usuario.idt_usuario = '${id}'`, res);
+  execSQLQuery(`CALL deletar_usuario('${id}')`, res);
   // res.sendStatus(200);
 
 });
@@ -195,7 +181,7 @@ router.get('/tb_deck_lista/:id', (req, res) => {
 
   id = req.params.id;
 
-  execSQLQuery(`SELECT * FROM ta_carta_has_ta_deck as deck INNER JOIN tb_carta as carta ON deck.idt_carta = carta.idt_carta WHERE idt_deck = '${id}'`, res);
+  execSQLQuery(`SELECT * FROM ta_carta_has_ta_deck as deck INNER JOIN tb_carta as carta ON deck.idt_carta = carta.idt_carta INNER JOIN tb_deck ON tb_deck.idt_deck = deck.idt_deck WHERE deck.idt_deck = '${id}' ORDER BY tipo_carta ASC`, res);
   res.status(200);
 })
 
@@ -216,12 +202,40 @@ router.post('/tb_deck', (req, res) => {
   res.status(200);
 })
 
+router.post('/tb_deck_carta', (req, res) => {
+
+  oDado = JSON.stringify(req.body);
+
+  stringTrabalhada = oDado.slice(1,-4);
+
+  obj = JSON.parse(stringTrabalhada);
+  obj = JSON.parse(obj);
+
+  var idCarta = obj.carta;
+  var idDeck = obj.deck;
+
+  execSQLQuery(`INSERT INTO ta_carta_has_ta_deck(idt_carta,idt_deck, qtd_carta_deck)VALUES('${idCarta}',${idDeck}, 1)`, res);
+
+  res.status(200);
+})
+
+router.delete('/tb_deck_carta/:deck/:carta', (req, res) => {
+
+  deck = req.params.deck;
+  carta = req.params.carta;
+
+  execSQLQuery(`DELETE FROM ta_carta_has_ta_deck WHERE idt_deck = '${deck}' AND idt_carta = '${carta}'`, res);
+
+  res.status(200);
+})
+
+
 // modelo de API para deletar dados na tabela
 router.delete('/tb_deck/:id', (req, res) => {
 
   id = req.params.id;
 
-  execSQLQuery(`DELETE deck.*, cartas.* FROM ta_carta_has_ta_deck as cartas RIGHT JOIN tb_deck as deck ON cartas.idt_deck = deck.idt_deck WHERE deck.idt_deck = '${id}'`, res);
+  execSQLQuery(`CALL deletar_cartas_deck('${id}')`, res);
 
 });
 
